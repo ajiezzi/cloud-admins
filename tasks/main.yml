@@ -1,0 +1,57 @@
+--- # Playbook used to create SSH user accounts across the VPC
+
+- name: Create user accounts
+  user: 
+    name={{ item.name }} 
+    state=present 
+    groups=wheel,sshusers
+  with_items: "{{ current_users }}"
+  when:
+    - "'{{ item.host_group }}' in group_names"
+    - "'bastion' not in group_names"
+
+- name: Add public SSH keys to authorized nodes
+  authorized_key: 
+    user={{ item.name }} 
+    key={{ item.pub_key }}
+  with_items: "{{ current_users }}"
+  when:
+    - "'{{ item.host_group }}' in group_names"
+    - "'bastion' not in group_names"
+
+- name: Passwords never expire
+  command: chage --maxdays -1 {{ item.name }}
+  with_items: "{{ current_users }}"
+  when:
+    - "'{{ item.host_group }}' in group_names"
+    - "'bastion' not in group_names"
+
+- name: Create user accounts on bastion host node
+  user: 
+    name={{ item.name }} 
+    state=present 
+    groups=users,sshusers
+  with_items: "{{ current_users }}"
+  when:
+    - "'bastion' in group_names"
+
+- name: Add public SSH keys to bastion host
+  authorized_key: 
+    user={{ item.name }} 
+    key={{ item.pub_key }}
+  with_items: "{{ current_users }}"
+  when:
+    - "'bastion' in group_names"
+   
+- name: Bastion passwords never expire
+  command: chage --maxdays -1 {{ item.name }}
+  with_items: "{{ current_users }}"
+  when:
+    - "'bastion' in group_names"
+
+- name: Remove user accounts across VPC
+  user: 
+    name={{ item.name }} 
+    state=absent 
+    remove=yes
+  with_items: "{{ removed_users }}"

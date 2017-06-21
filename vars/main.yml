@@ -1,0 +1,9 @@
+--- # List of Managed VPC privledged users
+
+current_users:
+  - name: jdoe
+    host_group: groupA
+    pub_key: "ssh-rsa AAAA..."
+
+removed_users:
+  - name: tester
